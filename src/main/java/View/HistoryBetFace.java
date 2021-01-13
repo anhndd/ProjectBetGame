@@ -49,9 +49,6 @@ public class HistoryBetFace implements Serializable {
     public void editButton(Long id) {
         isEditable = true;
         editable.put(id, true);
-        for(long l : editable.keySet()) {
-            System.out.println("test close " + l + " - " + editable.get(l));
-        }
     }
 
     public void cancelButton(Long id) {

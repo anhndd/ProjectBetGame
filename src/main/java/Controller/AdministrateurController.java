@@ -151,10 +151,10 @@ public class AdministrateurController {
         return userAccount.getUsername();
     }
 
-    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
+    @Schedule(dayOfWeek = "1", second = "0", minute = "01", hour = "0", persistent = false)
     public void scheduleCheckResult() {
         try {
-            System.out.println("test schedule");
+            System.out.println("Start scheduling");
             SeasonMatch currentSeason = FootballRestService.getCurrentSeason(competition);
             int lastMatchday = currentSeason.getCurrentMatchDay() - 1;
             List<Matche> matchlstLastDay = FootballRestService.getListOfMatch(competition, lastMatchday);
