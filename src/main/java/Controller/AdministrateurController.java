@@ -87,6 +87,7 @@ public class AdministrateurController {
         em.remove(em.contains(bookmakeurFace) ? bookmakeurFace : em.merge(bookmakeurFace));
         em.remove(em.contains(bookmakeurFace.getMatcheHost()) ? bookmakeurFace.getMatcheHost() : em.merge(bookmakeurFace.getMatcheHost()));
         em.remove(em.contains(bookmakeurFace.getCote()) ? bookmakeurFace.getCote() : em.merge(bookmakeurFace.getCote()));
+        em.remove(em.contains(bookmakeurFace.getUserAccount()) ? bookmakeurFace.getUserAccount() : em.merge(bookmakeurFace.getUserAccount()));
     }
 
     public long createParieur(Parieur parieur) {
@@ -110,6 +111,15 @@ public class AdministrateurController {
         List<Parieur> parieurs = query.setParameter("username", username).getResultList();
         if (parieurs != null && !parieurs.isEmpty()) {
             return parieurs.get(0);
+        }
+        return null;
+    }
+
+    public Bookmakeur getBookmakeurByMatche(int idmatch) {
+        Query query = em.createQuery("select b from Bookmakeur b where b.matcheHost.id = :idmatch");
+        List<Bookmakeur> bookmakeurs = query.setParameter("idmatch", idmatch).getResultList();
+        if (bookmakeurs != null && !bookmakeurs.isEmpty()) {
+            return bookmakeurs.get(0);
         }
         return null;
     }
@@ -176,7 +186,6 @@ public class AdministrateurController {
                             System.out.println("Look for match again on REST");
                         }
                     }
-
                     if (hmapMatchs.containsKey(idmatch)) {
                         Matche matche = hmapMatchs.get(idmatch);
                         ResultMatch resultmatch = matche.getResultmatch();
@@ -202,8 +211,12 @@ public class AdministrateurController {
                                 }
                                 notifyResult(parieur.getTwitterName(), 2, idmatch, parieur.getMoney(), moneybet);
                             }
-                            deletePari(pari);
                             isChange = true;
+                            Bookmakeur bookmakeurByMatche = getBookmakeurByMatche(pari.getMatche().getId());
+                            deletePari(pari);
+                            if(bookmakeurByMatche != null) {
+                                deleteBookmakeur(bookmakeurByMatche);
+                            }
                         }
                     } else {
                         System.err.println("Not found id match");

@@ -15,7 +15,13 @@
 <body>
 <h1>Game list</h1>
 <div class="container">
-    <h:commandButton value="History" class="nes-btn is-primary mb-4" />
+    <h:form>
+        <h:commandButton value="History" action="history" class="nes-btn is-primary mb-4" />
+        <h:commandButton value="Hall of Fame" action="ranking" class="nes-btn is-success mb-4" />
+        <h:commandButton value="Logout" action="logout" class="nes-btn is-error mb-4" />
+    </h:form>
+
+    <h2 class="nes-text is-success">Available Money #{parieurFace.money}</h2>
     <h2 class="nes-text is-primary">Available matches</h2>
     <h:inputText type="text" class="form-control nes-textarea mb-4" pt:placeholder="Search..." aria-label=""
                  aria-describedby="basic-addon1" id="search" onkeyup="MatchSearch()">

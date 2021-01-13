@@ -1,8 +1,11 @@
 package View;
 
+import Controller.AdministrateurController;
 import Controller.ParieurController;
 import Model.Matche;
 import Model.Pari;
+import Model.Parieur;
+import Model.UserAccount;
 
 import javax.ejb.EJB;
 import javax.enterprise.context.SessionScoped;
@@ -20,10 +23,12 @@ public class ParieurFace implements Serializable {
     @EJB
     ParieurController data;
     List<Matche> macths;
-
     @Inject
     DetailMatchFace detailMatchFace;
-
+    @Inject
+    LoginFace loginFace;
+    @EJB
+    AdministrateurController administrateurController;
 
     public int pickPariMatch(int idmatch, Pari pari) {
         return 0;
@@ -50,6 +55,12 @@ public class ParieurFace implements Serializable {
     }
 
     public int getMoney() {
+        UserAccount user = loginFace.getAuthenticationController().getUser();
+
+        if (user != null) {
+            Parieur parieurByUsername = administrateurController.getParieurByUsername(user.getUsername());
+            this.money = parieurByUsername.getMoney();
+        }
         return money;
     }
 

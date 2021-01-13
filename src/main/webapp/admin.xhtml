@@ -17,6 +17,9 @@
 <div class="container">
 
 <div style="margin-bottom: 30px" class="nes-table-responsive">
+    <h:form>
+        <h:commandButton value="Logout" action="logout" class="nes-btn is-error mb-4" />
+    </h:form>
     <h:outputLabel value="Parieus Table"/>
     <h:dataTable value="#{administrateurFace.parieurs}" var="parier" class="nes-table is-bordered is-centered">
         <h:column>
