@@ -76,7 +76,6 @@ public class BookmakeurFace implements Serializable {
     }
 
     public long createBookmaker(Matche matche){
-        System.out.println("test" + username + password + matche);
         Bookmakeur bookmakeur = new Bookmakeur();
         bookmakeur.setMatcheHost(matche);
         UserAccount bookmaker = new UserAccount();
@@ -87,6 +86,8 @@ public class BookmakeurFace implements Serializable {
         Cote cote = new Cote();
         cote.setExactScore(50);
         bookmakeur.setCote(cote);
-        return administrateurController.createBookmakeur(bookmakeur);
+        long rs = administrateurController.createBookmakeur(bookmakeur);
+        controller.notifyNewMatch(matche.getId());
+        return rs;
     }
 }

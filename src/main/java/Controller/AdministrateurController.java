@@ -3,12 +3,19 @@ package Controller;
 
 import Model.*;
 import Service.FootballRestService;
+import org.glassfish.jersey.client.ClientConfig;
 
 import javax.ejb.Schedule;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -118,7 +125,7 @@ public class AdministrateurController {
     public void deleteParieur(Parieur parieurFace) {
         em.remove(em.contains(parieurFace) ? parieurFace : em.merge(parieurFace));
         List<Pari> pariLst = parieurFace.getPariLst();
-        for(Pari pari : pariLst) {
+        for (Pari pari : pariLst) {
             deletePari(pari);
         }
         em.remove(em.contains(parieurFace.getUserAccount()) ? parieurFace.getUserAccount() : em.merge(parieurFace.getUserAccount()));
@@ -134,64 +141,92 @@ public class AdministrateurController {
         return userAccount.getUsername();
     }
 
-    @Schedule(second = "*/10", minute = "*", hour = "*", persistent = false)
+    @Schedule(second = "*/30", minute = "*", hour = "*", persistent = false)
     public void scheduleCheckResult() {
-        SeasonMatch currentSeason = FootballRestService.getCurrentSeason(competition);
-        int lastMatchday = currentSeason.getCurrentMatchDay() - 1;
-        List<Matche> matchlstLastDay = FootballRestService.getListOfMatch(competition, lastMatchday);
-        Map<Integer, Matche> hmapMatchs = new HashMap<>();
+        try {
+            System.out.println("test schedule");
+            SeasonMatch currentSeason = FootballRestService.getCurrentSeason(competition);
+            int lastMatchday = currentSeason.getCurrentMatchDay() - 1;
+            List<Matche> matchlstLastDay = FootballRestService.getListOfMatch(competition, lastMatchday);
+            Map<Integer, Matche> hmapMatchs = new HashMap<>();
 
-        List<Parieur> parieurlst = getListParieur();
-        for (Parieur parieur : parieurlst) {
-            List<Pari> pariLst = parieur.getPariLst();
-            List<Pari> newpariLst = new ArrayList<>();
-            for (Pari pari : pariLst) {
-                Cote cote = pari.getCote();
-                int moneybet = pari.getMoney();
-                int teamId = pari.getTeamId();
-                Matche matcheBet = pari.getMatche();
-                int idmatch = matcheBet.getId();
+            boolean isChange = false;
+            List<Parieur> parieurlst = getListParieur();
+            for (Parieur parieur : parieurlst) {
+                List<Pari> pariLst = parieur.getPariLst();
+                List<Pari> newpariLst = new ArrayList<>();
 
-                if (!hmapMatchs.containsKey(idmatch)) {
-                    for (Matche m : matchlstLastDay){
-                        if(m.getId() == idmatch){
-                            hmapMatchs.put(idmatch, m);
-                            break;
+                for (Pari pari : pariLst) {
+                    Cote cote = pari.getCote();
+                    int moneybet = pari.getMoney();
+                    int teamId = pari.getTeamId();
+                    Matche matcheBet = pari.getMatche();
+                    int idmatch = matcheBet.getId();
+
+                    if (!hmapMatchs.containsKey(idmatch)) {
+                        for (Matche m : matchlstLastDay) {
+                            if (m.getId() == idmatch) {
+                                hmapMatchs.put(idmatch, m);
+                                break;
+                            }
+                        }
+                        if (!hmapMatchs.containsKey(idmatch)) {
+                            Matche oldMatchFound = FootballRestService.getMatch(idmatch);
+                            hmapMatchs.put(idmatch, oldMatchFound);
+                            System.out.println("Look for match again on REST");
                         }
                     }
-                    if (!hmapMatchs.containsKey(idmatch)){
-                        Matche oldMatchFound = FootballRestService.getMatch(idmatch);
-                        hmapMatchs.put(idmatch, oldMatchFound);
-                        System.out.println("Look for match again on REST");
+
+                    if (hmapMatchs.containsKey(idmatch)) {
+                        Matche matche = hmapMatchs.get(idmatch);
+                        ResultMatch resultmatch = matche.getResultmatch();
+
+                        if (resultmatch.getWinner().isEmpty()) {
+                            newpariLst.add(pari);
+                        } else {
+                            if (resultmatch.getWinner().equals("DRAW")) {
+                                parieur.setMoney(parieur.getMoney() + moneybet);
+                                notifyResult(parieur.getTwitterName(), 0, idmatch, parieur.getMoney(), 0);
+                            } else if (resultmatch.getWinner().equals("HOME_TEAM")) {
+                                if (teamId == matche.getHomeTeamId()) {
+                                    int moneyEarn = moneybet * (int) cote.getExactScore();
+                                    parieur.setMoney(parieur.getMoney() + moneybet + moneyEarn);
+                                    notifyResult(parieur.getTwitterName(), 1, idmatch, parieur.getMoney(), moneyEarn);
+                                }
+                                notifyResult(parieur.getTwitterName(), 2, idmatch, parieur.getMoney(), moneybet);
+                            } else if (resultmatch.getWinner().equals("AWAY_TEAM")) {
+                                if (teamId == matche.getAwayTeamId()) {
+                                    int moneyEarn = moneybet * (100 - (int) cote.getExactScore());
+                                    parieur.setMoney(parieur.getMoney() + moneybet + moneyEarn);
+                                    notifyResult(parieur.getTwitterName(), 1, idmatch, parieur.getMoney(), moneyEarn);
+                                }
+                                notifyResult(parieur.getTwitterName(), 2, idmatch, parieur.getMoney(), moneybet);
+                            }
+                            deletePari(pari);
+                            isChange = true;
+                        }
+                    } else {
+                        System.err.println("Not found id match");
                     }
                 }
-
-                if(hmapMatchs.containsKey(idmatch)) {
-                    Matche matche = hmapMatchs.get(idmatch);
-                    ResultMatch resultmatch = matche.getResultmatch();
-
-                    if (resultmatch.getWinner().isEmpty()){
-                        newpariLst.add(pari);
-                    } else {
-                        if (resultmatch.getWinner().equals("DRAW")) {
-                            parieur.setMoney(parieur.getMoney() + moneybet);
-                        } else if (resultmatch.getWinner().equals("HOME_TEAM")) {
-                            if (teamId == matche.getHomeTeamId()) {
-                                parieur.setMoney(parieur.getMoney() + moneybet + moneybet * (int) cote.getExactScore());
-                            }
-                        } else if (resultmatch.getWinner().equals("AWAY_TEAM")) {
-                            if (teamId == matche.getAwayTeamId()) {
-                                parieur.setMoney(parieur.getMoney() + moneybet + moneybet * (100 - (int) cote.getExactScore()));
-                            }
-                        }
-                        deletePari(pari);
-                    }
-                } else {
-                    System.err.println("Not found id match");
+                if (isChange) {
+                    parieur.setPariLst(newpariLst);
+                    updateParieur(parieur);
                 }
             }
-            parieur.setPariLst(newpariLst);
-            updateParieur(parieur);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    public void notifyResult(String twitterName, int result, int idmatch, int money, int moenyearn) {
+        ClientConfig cf = new ClientConfig();
+        Client c = ClientBuilder.newClient(cf);
+        WebTarget target = c.target("http://localhost:8080/ProjectBetGame-1.0-SNAPSHOT/rest/service/parieur/result/" + twitterName + "/" + result + "?idmatch=" + idmatch + "&money=" + money + "&moneyearn" + moenyearn);
+
+        Invocation.Builder inBuilder = target.request(MediaType.TEXT_PLAIN);
+        Response response = inBuilder.get();
+        if (response.getStatus() == 200) {
         }
     }
 }

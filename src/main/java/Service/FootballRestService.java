@@ -28,7 +28,7 @@ public class FootballRestService {
     }
 
     public static SeasonMatch getCurrentSeason(String competitionID) {
-        WebTarget target = c.target("http://api.football-data.org/v2/competitions/PL");
+        WebTarget target = c.target("http://api.football-data.org/v2/competitions/"+competitionID);
         Invocation.Builder builder = target.request().header("X-Auth-Token", tokenAPI);
         Response response = builder.get();
         if (response.getStatus() == 200) {
