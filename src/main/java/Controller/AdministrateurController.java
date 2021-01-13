@@ -80,6 +80,7 @@ public class AdministrateurController {
         em.remove(em.contains(bookmakeurFace) ? bookmakeurFace : em.merge(bookmakeurFace));
         em.remove(em.contains(bookmakeurFace.getMatcheHost()) ? bookmakeurFace.getMatcheHost() : em.merge(bookmakeurFace.getMatcheHost()));
         em.remove(em.contains(bookmakeurFace.getCote()) ? bookmakeurFace.getCote() : em.merge(bookmakeurFace.getCote()));
+        em.remove(em.contains(bookmakeurFace.getUserAccount()) ? bookmakeurFace.getUserAccount() : em.merge(bookmakeurFace.getUserAccount()));
     }
 
     public long createParieur(Parieur parieur) {
@@ -103,6 +104,15 @@ public class AdministrateurController {
         List<Parieur> parieurs = query.setParameter("username", username).getResultList();
         if (parieurs != null && !parieurs.isEmpty()) {
             return parieurs.get(0);
+        }
+        return null;
+    }
+
+    public Bookmakeur getBookmakeurByMatche(int idmatch) {
+        Query query = em.createQuery("select b from Bookmakeur b where b.matcheHost.id = :idmatch");
+        List<Bookmakeur> bookmakeurs = query.setParameter("idmatch", idmatch).getResultList();
+        if (bookmakeurs != null && !bookmakeurs.isEmpty()) {
+            return bookmakeurs.get(0);
         }
         return null;
     }
@@ -134,13 +144,13 @@ public class AdministrateurController {
         return userAccount.getUsername();
     }
 
-    @Schedule(second = "*/10", minute = "*", hour = "*", persistent = false)
+    @Schedule(second = "*/50", minute = "*", hour = "*", persistent = false)
     public void scheduleCheckResult() {
         SeasonMatch currentSeason = FootballRestService.getCurrentSeason(competition);
         int lastMatchday = currentSeason.getCurrentMatchDay() - 1;
         List<Matche> matchlstLastDay = FootballRestService.getListOfMatch(competition, lastMatchday);
         Map<Integer, Matche> hmapMatchs = new HashMap<>();
-
+        System.out.println("test Check result");
         List<Parieur> parieurlst = getListParieur();
         for (Parieur parieur : parieurlst) {
             List<Pari> pariLst = parieur.getPariLst();
@@ -156,6 +166,7 @@ public class AdministrateurController {
                     for (Matche m : matchlstLastDay){
                         if(m.getId() == idmatch){
                             hmapMatchs.put(idmatch, m);
+                            System.out.println("test found " + m.getResultmatch().getWinner());
                             break;
                         }
                     }
@@ -173,18 +184,25 @@ public class AdministrateurController {
                     if (resultmatch.getWinner().isEmpty()){
                         newpariLst.add(pari);
                     } else {
+                        System.out.println("test" + resultmatch.getWinner());
                         if (resultmatch.getWinner().equals("DRAW")) {
                             parieur.setMoney(parieur.getMoney() + moneybet);
                         } else if (resultmatch.getWinner().equals("HOME_TEAM")) {
                             if (teamId == matche.getHomeTeamId()) {
-                                parieur.setMoney(parieur.getMoney() + moneybet + moneybet * (int) cote.getExactScore());
+                                parieur.setMoney(parieur.getMoney() + moneybet + moneybet * (int) (cote.getExactScore() / 100));
+                            } else {
+                                System.out.println("test home team lose");
                             }
                         } else if (resultmatch.getWinner().equals("AWAY_TEAM")) {
                             if (teamId == matche.getAwayTeamId()) {
-                                parieur.setMoney(parieur.getMoney() + moneybet + moneybet * (100 - (int) cote.getExactScore()));
+                                parieur.setMoney(parieur.getMoney() + moneybet + moneybet * (100 - (int) (cote.getExactScore())/ 100));
+                            } else {
+                                System.out.println("test away team lose");
                             }
                         }
+                        Bookmakeur bookmakeurByMatche = getBookmakeurByMatche(pari.getMatche().getId());
                         deletePari(pari);
+                        deleteBookmakeur(bookmakeurByMatche);
                     }
                 } else {
                     System.err.println("Not found id match");

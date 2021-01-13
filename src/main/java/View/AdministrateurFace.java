@@ -1,9 +1,7 @@
 package View;
 
 import Controller.AdministrateurController;
-import Controller.BookmakeurController;
 import Model.Bookmakeur;
-import Model.Matche;
 import Model.Parieur;
 
 import javax.ejb.EJB;
@@ -78,10 +76,11 @@ public class AdministrateurFace implements Serializable {
 
     public void cancelButton(Long id) {
         editable.put(id, false);
+        isEditable = false;
     }
 
     public void updateName(Long id, String name) {
-        isEditable = true;
+        isEditable = false;
         Parieur p = controller.getParieur(id);
         p.setName(name);
         controller.updateParieur(p);

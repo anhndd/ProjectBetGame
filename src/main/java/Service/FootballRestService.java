@@ -63,6 +63,7 @@ public class FootballRestService {
                 System.err.println("getScheduleMatch Fail");
             }
             matchlistSave = getListOfMatch(competitionID, matchday + 1);
+//            matchlistSave = getListOfMatch(competitionID, matchday - 1);
             timeSave = currentTimeMillis;
         }
         return matchlistSave;
@@ -99,14 +100,23 @@ public class FootballRestService {
                 m.setStartDate(match.getString("utcDate"));
 
                 JsonObject score = match.getJsonObject("score");
-                if (!score.get("winner").toString().equals("null")) {
-                    ResultMatch rs = new ResultMatch();
-                    rs.setScoreAwayTeam(score.getJsonObject("fullTime").getInt("awayTeam"));
-                    rs.setScoreHomeTeam(score.getJsonObject("fullTime").getInt("homeTeam"));
-                    String winner = score.getString("winner");
-                    rs.setWinner(winner.equals("DRAW") ? "DRAW" : winner.equals("HOME_TEAM") ? m.getHomeTeam() : m.getAwayTeam());
-                    m.setResultmatch(rs);
-                    m.setDuration(score.getString("duration"));
+                if(true) {
+                    if (!score.get("winner").toString().equals("null")) {
+                        ResultMatch rs = new ResultMatch();
+                        rs.setScoreAwayTeam(score.getJsonObject("fullTime").getInt("awayTeam"));
+                        rs.setScoreHomeTeam(score.getJsonObject("fullTime").getInt("homeTeam"));
+                        String winner = score.getString("winner");
+                        rs.setWinner(winner);
+                        m.setResultmatch(rs);
+                        m.setDuration(score.getString("duration"));
+                    } else {
+                        ResultMatch rs = new ResultMatch();
+                        rs.setScoreAwayTeam(0);
+                        rs.setScoreHomeTeam(0);
+                        rs.setWinner("");
+                        m.setResultmatch(rs);
+                        m.setDuration("");
+                    }
                 } else {
                     ResultMatch rs = new ResultMatch();
                     rs.setScoreAwayTeam(0);
@@ -152,7 +162,7 @@ public class FootballRestService {
                 rs.setScoreAwayTeam(score.getJsonObject("fullTime").getInt("awayTeam"));
                 rs.setScoreHomeTeam(score.getJsonObject("fullTime").getInt("homeTeam"));
                 String winner = score.getString("winner");
-                rs.setWinner(winner.equals("DRAW") ? "DRAW" : winner.equals("HOME_TEAM") ? m.getHomeTeam() : m.getAwayTeam());
+                rs.setWinner(winner);
                 m.setResultmatch(rs);
                 m.setDuration(score.getString("duration"));
             } else {
