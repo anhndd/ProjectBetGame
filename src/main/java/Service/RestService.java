@@ -51,7 +51,7 @@ public class RestService {
     @GET
     @Path("/parieur/result/{twitter}/{result}")
     public int notifyResult(@PathParam("twitter") String twitterName, @PathParam("result") int result, @QueryParam("idmatch") int idmatch, @QueryParam("money") int money, @QueryParam("moneyearn") int moneyEarn) {
-        Matche detailMatch = parieurController.getDetailMatch(idmatch);
+        Matche detailMatch = FootballRestService.getMatch(idmatch);
         try {
             String directMessage ="";
             if (result == 0) {

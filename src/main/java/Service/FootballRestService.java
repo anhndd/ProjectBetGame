@@ -22,13 +22,15 @@ public class FootballRestService {
     static Client c;
     public static final String competition = "PL";
 
+    static boolean isTest = false;
+
     static {
         ClientConfig cf = new ClientConfig();
         c = ClientBuilder.newClient(cf);
     }
 
     public static SeasonMatch getCurrentSeason(String competitionID) {
-        WebTarget target = c.target("http://api.football-data.org/v2/competitions/"+competitionID);
+        WebTarget target = c.target("http://api.football-data.org/v2/competitions/" + competitionID);
         Invocation.Builder builder = target.request().header("X-Auth-Token", tokenAPI);
         Response response = builder.get();
         if (response.getStatus() == 200) {
@@ -47,7 +49,7 @@ public class FootballRestService {
 
     public static List<Matche> getScheduleMatch(String competitionID) {
         long currentTimeMillis = System.currentTimeMillis();
-        if(currentTimeMillis - timeSave > 60000) {
+        if (currentTimeMillis - timeSave > 60000) {
             WebTarget target = FootballRestService.c.target("http://api.football-data.org/v2/competitions/" + competitionID);
             Invocation.Builder builder = target.request().header("X-Auth-Token", tokenAPI);
             Response response = builder.get();
@@ -62,8 +64,13 @@ public class FootballRestService {
             } else {
                 System.err.println("getScheduleMatch Fail");
             }
-            matchlistSave = getListOfMatch(competitionID, matchday + 1);
-//            matchlistSave = getListOfMatch(competitionID, matchday - 1);
+
+            if (isTest) {
+                matchlistSave = getListOfMatch(competitionID, matchday - 1);
+            } else {
+                matchlistSave = getListOfMatch(competitionID, matchday + 1);
+            }
+
             timeSave = currentTimeMillis;
         }
         return matchlistSave;
@@ -100,7 +107,7 @@ public class FootballRestService {
                 m.setStartDate(match.getString("utcDate"));
 
                 JsonObject score = match.getJsonObject("score");
-                if(true) {
+                if (!isTest) {
                     if (!score.get("winner").toString().equals("null")) {
                         ResultMatch rs = new ResultMatch();
                         rs.setScoreAwayTeam(score.getJsonObject("fullTime").getInt("awayTeam"));
@@ -183,7 +190,7 @@ public class FootballRestService {
     public static JsonArray getJSONScheduleMatch(String competitionID) {
         List<Matche> scheduleMatches = getScheduleMatch(competitionID);
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-        for(Matche m : scheduleMatches){
+        for (Matche m : scheduleMatches) {
             arrayBuilder.add(m.toJsonObject());
         }
         JsonArray jsonArray = arrayBuilder.build();
@@ -192,7 +199,7 @@ public class FootballRestService {
 
 
     public static void main(String[] args) {
-        getJSONScheduleMatch("PL");
+//        getJSONScheduleMatch("PL");
 //        WebTarget target = c.target("http://api.football-data.org/v2/competitions/PL/matches?matchday=12");
 //        WebTarget target = c.target("http://api.football-data.org/v2/matches/303864");
 //        Invocation.Builder builder = target.request().header("X-Auth-Token", tokenAPI);
@@ -201,24 +208,27 @@ public class FootballRestService {
 //        if (response.getStatus() == 200) {
 //            String respstring = response.readEntity(String.class);
 //            StringReader stringReader = new StringReader(respstring);
-//            JsonReader reader = Json.createReader(stringReader);
+//            JsonReader reader = Json.createReadeservice.getCurrentSeason("PL").getCurrentMatchDay()r(stringReader);
 //            JsonObject jsonObject = reader.readObject();
 //            System.out.println(jsonObject.toString());
 //        }
 
 //        FootballRestService service = new FootballRestService();
-//        System.out.println(service.getCurrentSeason("PL").getId());
-//        System.out.println(service.getCurrentSeason("PL").getCurrentMatchDay());
-//        List<Match> pl = service.getListOfMatch("PL", 15);
-//        for (Match s : pl) {
+////        System.out.println(service.getCurrentSeason("PL").getId());
+////        System.out.println(service.getCurrentSeason("PL").getCurrentMatchDay());
+//        List<Matche> pl = service.getListOfMatch("PL", service.getCurrentSeason("PL").getCurrentMatchDay()-1);
+//        for (Matche s : pl) {
 //            String scrore1 = ".";
 //            String scrore2 = ".";
 //            if (s.getResultmatch() != null) {
 //                scrore1 = s.getResultmatch().getScoreAwayTeam() + "";
 //                scrore2 = s.getResultmatch().getScoreHomeTeam() + "";
 //            }
-//            System.out.println(s.getAwayTeam() + " " + scrore1 + " - " + scrore2 + " " + s.getHomeTeam());
+//            System.out.println(s.getResultmatch().getWinner() + " : " + s.getAwayTeam() + " " + scrore1 + " - " + scrore2 + " " + s.getHomeTeam());
 //            System.out.println(s.getDuration());
 //        }
+        long a  = 50;
+        int moneyEarn = (int) (22 * ((100 - (float) a) / 100));
+        System.out.println(moneyEarn);
     }
 }

@@ -167,9 +167,9 @@ public class ParieurRestService {
         return jsonArray;
     }
 
-    public static void main(String[] args) {
-        ParieurRestService restService = new ParieurRestService();
-        System.out.println(restService.getMatchs(""));
-//        System.out.println(restService.getMatch(303864));
-    }
+//    public static void main(String[] args) {
+//        ParieurRestService restService = new ParieurRestService();
+//        System.out.println(restService.getMatchs(""));
+////        System.out.println(restService.getMatch(303864));
+//    }
 }

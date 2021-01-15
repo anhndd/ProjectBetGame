@@ -116,10 +116,14 @@ public class AdministrateurController {
     }
 
     public Bookmakeur getBookmakeurByMatche(int idmatch) {
-        Query query = em.createQuery("select b from Bookmakeur b where b.matcheHost.id = :idmatch");
-        List<Bookmakeur> bookmakeurs = query.setParameter("idmatch", idmatch).getResultList();
-        if (bookmakeurs != null && !bookmakeurs.isEmpty()) {
-            return bookmakeurs.get(0);
+        try {
+            Query query = em.createQuery("select b from Bookmakeur b where b.matcheHost.id = :idmatch");
+            List<Bookmakeur> bookmakeurs = query.setParameter("idmatch", idmatch).getResultList();
+            if (bookmakeurs != null && !bookmakeurs.isEmpty()) {
+                return bookmakeurs.get(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -151,7 +155,8 @@ public class AdministrateurController {
         return userAccount.getUsername();
     }
 
-    @Schedule(dayOfWeek = "1", second = "0", minute = "01", hour = "0", persistent = false)
+        @Schedule(dayOfWeek = "1", second = "0", minute = "01", hour = "0", persistent = false)
+//    @Schedule(second = "*/10", minute = "*", hour = "*", persistent = false)
     public void scheduleCheckResult() {
         try {
             System.out.println("Start scheduling");
@@ -198,23 +203,26 @@ public class AdministrateurController {
                                 notifyResult(parieur.getTwitterName(), 0, idmatch, parieur.getMoney(), 0);
                             } else if (resultmatch.getWinner().equals("HOME_TEAM")) {
                                 if (teamId == matche.getHomeTeamId()) {
-                                    int moneyEarn = moneybet * (int) cote.getExactScore();
+                                    int moneyEarn = (int) (moneybet * ((float) cote.getExactScore() / 100));
                                     parieur.setMoney(parieur.getMoney() + moneybet + moneyEarn);
                                     notifyResult(parieur.getTwitterName(), 1, idmatch, parieur.getMoney(), moneyEarn);
+                                } else {
+                                    notifyResult(parieur.getTwitterName(), 2, idmatch, parieur.getMoney(), moneybet);
                                 }
-                                notifyResult(parieur.getTwitterName(), 2, idmatch, parieur.getMoney(), moneybet);
                             } else if (resultmatch.getWinner().equals("AWAY_TEAM")) {
                                 if (teamId == matche.getAwayTeamId()) {
-                                    int moneyEarn = moneybet * (100 - (int) cote.getExactScore());
+                                    int moneyEarn = (int) (moneybet * ((100 - (float) cote.getExactScore()) / 100));
                                     parieur.setMoney(parieur.getMoney() + moneybet + moneyEarn);
                                     notifyResult(parieur.getTwitterName(), 1, idmatch, parieur.getMoney(), moneyEarn);
+                                } else {
+                                    notifyResult(parieur.getTwitterName(), 2, idmatch, parieur.getMoney(), moneybet);
                                 }
-                                notifyResult(parieur.getTwitterName(), 2, idmatch, parieur.getMoney(), moneybet);
                             }
                             isChange = true;
                             Bookmakeur bookmakeurByMatche = getBookmakeurByMatche(pari.getMatche().getId());
+
                             deletePari(pari);
-                            if(bookmakeurByMatche != null) {
+                            if (bookmakeurByMatche != null) {
                                 deleteBookmakeur(bookmakeurByMatche);
                             }
                         }
@@ -235,7 +243,7 @@ public class AdministrateurController {
     public void notifyResult(String twitterName, int result, int idmatch, int money, int moenyearn) {
         ClientConfig cf = new ClientConfig();
         Client c = ClientBuilder.newClient(cf);
-        WebTarget target = c.target("http://localhost:8080/ProjectBetGame-1.0-SNAPSHOT/rest/service/parieur/result/" + twitterName + "/" + result + "?idmatch=" + idmatch + "&money=" + money + "&moneyearn" + moenyearn);
+        WebTarget target = c.target("http://localhost:8080/ProjectBetGame-1.0-SNAPSHOT/rest/service/parieur/result/" + twitterName + "/" + result + "?idmatch=" + idmatch + "&money=" + money + "&moneyearn=" + moenyearn);
 
         Invocation.Builder inBuilder = target.request(MediaType.TEXT_PLAIN);
         Response response = inBuilder.get();

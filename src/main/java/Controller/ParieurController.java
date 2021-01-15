@@ -82,7 +82,7 @@ public class ParieurController {
             JsonObject jsonObject = reader.readObject();
             Matche m = new Matche();
             m.fromJsonObject(jsonObject);
-            System.out.println("Test" + m);
+            System.out.println("Test " + jsonObject);
             return m;
         }
         return null;
